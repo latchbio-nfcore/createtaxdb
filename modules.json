@@ -20,6 +20,11 @@
                         "git_sha": "b29f6beb86d1d24d680277fb1a3f4de7b8b8a92c",
                         "installed_by": ["modules"]
                     },
+                    "ganon/buildcustom": {
+                        "branch": "master",
+                        "git_sha": "c89d14142b1a81600487a0d086669222d3804b4f",
+                        "installed_by": ["modules"]
+                    },
                     "kaiju/mkfmi": {
                         "branch": "master",
                         "git_sha": "7365564c402cbd01e9407810730efd10039997a3",

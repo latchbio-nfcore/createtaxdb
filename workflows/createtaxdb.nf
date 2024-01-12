@@ -59,6 +59,7 @@ include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 include { CAT_CAT as CAT_CAT_AA       } from '../modules/nf-core/cat/cat/main'
+include { GANON_BUILDCUSTOM           } from '../modules/nf-core/ganon/buildcustom/main'
 include { DIAMOND_MAKEDB              } from '../modules/nf-core/diamond/makedb/main'
 include { KAIJU_MKFMI                 } from '../modules/nf-core/kaiju/mkfmi/main'
 /*
@@ -79,6 +80,15 @@ workflow CREATETAXDB {
     //
     ch_input = Channel.fromSamplesheet("input")
 
+    // Prepare input for nucleotide-based
+    ch_refs_for_ncmultiref = ch_input
+                                .map{meta, fasta_dna, fasta_aa -> [[id: params.dbname], fasta_dna]}
+                                .filter{meta, fasta_dna ->
+                                        fasta_dna
+                                }
+                                .groupTuple()
+                                .dump(tag: 'dna')
+
     // Prepare input for protein-based single file inputs modules
 
     // TODO: Need to have a modification step to get header correct to actually run with kaiju...
@@ -89,7 +99,7 @@ workflow CREATETAXDB {
     if ( [params.build_kaiju, params.build_diamond].any() ) {
 
         // Pull just AA sequences
-        ch_refs_for_singleref = ch_input
+        ch_refs_for_aasingleref = ch_input
                                     .map{meta, fasta_dna, fasta_aa  -> [[id: params.dbname], fasta_aa]}
                                     .filter{meta, fasta_aa ->
                                         fasta_aa
@@ -97,12 +107,21 @@ workflow CREATETAXDB {
                                     .groupTuple()
 
         // Place in single file
-        ch_singleref_for_aa = CAT_CAT_AA ( ch_refs_for_singleref )
+        ch_singleref_for_aa = CAT_CAT_AA ( ch_refs_for_aasingleref )
         ch_versions = ch_versions.mix(CAT_CAT_AA.out.versions.first())
     }
 
     //
-    // PROTEIN BASED BUILDS
+    // NUCLEOTIDE BASED BUILDS
+    //
+
+    if ( params.build_ganon ) {
+        GANON_BUILDCUSTOM ( fasta, taxonomy, genomesize )
+        ch_versions = ch_versions.mix(GANON_BUILDCUSTOM.out.versions.first())
+    }
+
+    //
+    // AMINO ACID BASED BUILDS
     //
 
     //
