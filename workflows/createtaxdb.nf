@@ -59,8 +59,8 @@ include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 include { CAT_CAT as CAT_CAT_AA       } from '../modules/nf-core/cat/cat/main'
-include { KAIJU_MKFMI                 } from '../modules/nf-core/kaiju/mkfmi/main'
 include { DIAMOND_MAKEDB              } from '../modules/nf-core/diamond/makedb/main'
+include { KAIJU_MKFMI                 } from '../modules/nf-core/kaiju/mkfmi/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -79,7 +79,7 @@ workflow CREATETAXDB {
     //
     ch_input = Channel.fromSamplesheet("input")
 
-    // Prepare input for single file inputs modules
+    // Prepare input for protein-based single file inputs modules
 
     // TODO: Need to have a modification step to get header correct to actually run with kaiju...
     // TEST first!
@@ -102,6 +102,21 @@ workflow CREATETAXDB {
     }
 
     //
+    // PROTEIN BASED BUILDS
+    //
+
+    //
+    // MODULE: Run DIAMOND/MAKEDB
+    //
+
+    // TODO
+    // - nf-test
+    if ( params.build_diamond  ) {
+        DIAMOND_MAKEDB ( CAT_CAT_AA.out.file_out, params.prot2taxid, params.nodesdmp, params.namesdmp )
+        ch_versions = ch_versions.mix(DIAMOND_MAKEDB.out.versions.first())
+    }
+
+    //
     // MODULE: Run KAIJU/MKFMI
     //
 
@@ -110,12 +125,9 @@ workflow CREATETAXDB {
         ch_versions = ch_versions.mix(KAIJU_MKFMI.out.versions.first())
     }
 
-    // TODO
-    // - nf-test
-    if ( params.build_diamond  ) {
-        DIAMOND_MAKEDB ( CAT_CAT_AA.out.file_out, params.prot2taxid, params.nodesdmp, params.namesdmp )
-        ch_versions = ch_versions.mix(DIAMOND_MAKEDB.out.versions.first())
-    }
+    //
+    // Version Reporting
+    //
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
