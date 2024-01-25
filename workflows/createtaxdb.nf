@@ -89,6 +89,8 @@ workflow CREATETAXDB {
                                 .groupTuple()
                                 .dump(tag: 'dna')
 
+
+
     // Prepare input for protein-based single file inputs modules
 
     // TODO: Need to have a modification step to get header correct to actually run with kaiju...
@@ -116,7 +118,7 @@ workflow CREATETAXDB {
     //
 
     if ( params.build_ganon ) {
-        GANON_BUILDCUSTOM ( fasta, taxonomy, genomesize )
+        GANON_BUILDCUSTOM ( ch_refs_for_ncmultiref, [params.namesdmp, params.nodesdmp], [] )
         ch_versions = ch_versions.mix(GANON_BUILDCUSTOM.out.versions.first())
     }
 
